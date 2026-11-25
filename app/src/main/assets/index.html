@@ -620,6 +620,178 @@
         let isSpeedTesting = false;
         let isVipUnlocked = false;
 
+        // ================= ផ្នែកទី ៤៖ AndroidBridge & Keep-Alive =================
+        const AEGIS_VPN_STORAGE_KEY = 'AEGIS_LAST_VPN_CONFIG';
+        let manualDisconnectFlag = false;
+        let vpnWatchdogTimer = null;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
+
+        function saveActiveVpnConfig(serverObj) {
+            if (!serverObj) return null;
+            const payloadObj = {
+                id: serverObj.id,
+                name: serverObj.name,
+                protocol: serverObj.protocol,
+                shortProto: serverObj.shortProto,
+                uri: serverObj.ssUri,
+                ping: serverObj.ping,
+                updatedAt: Date.now()
+            };
+            const payloadJson = JSON.stringify(payloadObj);
+            try {
+                localStorage.setItem(AEGIS_VPN_STORAGE_KEY, payloadJson);
+            } catch (e) {
+                console.warn('Cannot save VPN config to localStorage:', e);
+            }
+            return payloadJson;
+        }
+
+        function getSavedVpnConfig() {
+            try {
+                const raw = localStorage.getItem(AEGIS_VPN_STORAGE_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function nativeConnectVPN(serverObj) {
+            const targetServer = serverObj || selectedServer || getSavedVpnConfig();
+            if (!targetServer) return false;
+
+            manualDisconnectFlag = false;
+            reconnectAttempts = 0;
+            const payloadJson = saveActiveVpnConfig(targetServer);
+
+            try {
+                if (window.AndroidBridge && typeof window.AndroidBridge.connectVpn === 'function') {
+                    window.AndroidBridge.connectVpn(payloadJson);
+                    startVpnWatchdog();
+                    return true;
+                }
+            } catch (err) {
+                console.error('AndroidBridge connectVpn error:', err);
+            }
+            startVpnWatchdog();
+            return false;
+        }
+
+        function nativeDisconnectVPN() {
+            manualDisconnectFlag = true;
+            reconnectAttempts = 0;
+            stopVpnWatchdog();
+
+            try {
+                localStorage.removeItem(AEGIS_VPN_STORAGE_KEY);
+            } catch (e) {
+            }
+
+            try {
+                if (window.AndroidBridge && typeof window.AndroidBridge.disconnectVpn === 'function') {
+                    window.AndroidBridge.disconnectVpn();
+                    return true;
+                }
+            } catch (err) {
+                console.error('AndroidBridge disconnectVpn error:', err);
+            }
+            return false;
+        }
+
+        function isNativeVpnActive() {
+            try {
+                if (window.AndroidBridge && typeof window.AndroidBridge.isVpnActive === 'function') {
+                    return Boolean(window.AndroidBridge.isVpnActive());
+                }
+            } catch (err) {
+                console.error('AndroidBridge isVpnActive error:', err);
+            }
+            return Boolean(isConnected);
+        }
+
+        function startVpnWatchdog() {
+            stopVpnWatchdog();
+            vpnWatchdogTimer = setInterval(() => {
+                if (manualDisconnectFlag || !isConnected) return;
+
+                const hasBridge = Boolean(window.AndroidBridge && typeof window.AndroidBridge.isVpnActive === 'function');
+                if (!hasBridge) return;
+
+                const nativeActive = isNativeVpnActive();
+                if (!nativeActive && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    reconnectAttempts++;
+                    const saved = getSavedVpnConfig() || selectedServer;
+                    if (saved) {
+                        if (typeof showToast === 'function') {
+                            showToast(`កំពុងភ្ជាប់ VPN ឡើងវិញ (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+                        }
+                        const payloadJson = JSON.stringify(saved);
+                        try {
+                            window.AndroidBridge.connectVpn(payloadJson);
+                        } catch (err) {
+                            console.error('Watchdog reconnect error:', err);
+                        }
+                    }
+                } else if (nativeActive) {
+                    reconnectAttempts = 0;
+                }
+            }, 5000);
+        }
+
+        function stopVpnWatchdog() {
+            if (vpnWatchdogTimer) {
+                clearInterval(vpnWatchdogTimer);
+                vpnWatchdogTimer = null;
+            }
+        }
+
+        window.onNativeVpnState = function(connected, statusCode) {
+            console.log('Native VPN State:', connected, statusCode);
+
+            if (!connected && statusCode === 'VPN_PERMISSION_DENIED') {
+                manualDisconnectFlag = true;
+                stopVpnWatchdog();
+                if (typeof isConnected !== 'undefined' && isConnected && typeof disconnectVPN === 'function') {
+                    disconnectVPN();
+                }
+                if (typeof showToast === 'function') {
+                    showToast('អ្នកបានបដិសេធសិទ្ធិ VPN លើទូរស័ព្ទ');
+                }
+                return;
+            }
+
+            if (connected && (statusCode === 'VPN_PERMISSION_GRANTED' || statusCode === 'VPN_CONNECTED')) {
+                manualDisconnectFlag = false;
+                reconnectAttempts = 0;
+                startVpnWatchdog();
+                if (typeof showToast === 'function') {
+                    showToast('ប្រព័ន្ធ Android VpnService បានបើកដំណើរការ');
+                }
+                return;
+            }
+
+            if (statusCode === 'VPN_SYNC_ACTIVE' && connected) {
+                if (typeof isConnected !== 'undefined' && !isConnected && typeof connectVPN === 'function') {
+                    connectVPN();
+                }
+            } else if (statusCode === 'VPN_SYNC_IDLE' && !connected) {
+                if (typeof isConnected !== 'undefined' && isConnected && !manualDisconnectFlag && typeof disconnectVPN === 'function') {
+                    disconnectVPN();
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                const hasBridge = Boolean(window.AndroidBridge && typeof window.AndroidBridge.isVpnActive === 'function');
+                if (hasBridge) {
+                    const nativeActive = isNativeVpnActive();
+                    window.onNativeVpnState(nativeActive, nativeActive ? 'VPN_SYNC_ACTIVE' : 'VPN_SYNC_IDLE');
+                }
+            }
+        });
+        // ================= ចប់ផ្នែកទី ៤ =================
+
         // បង្ហាញបញ្ជីម៉ាស៊ីនមេ VIP
         function renderServers() {
             const listContainer = document.getElementById('server-list');
@@ -701,6 +873,7 @@
                 return;
             }
             selectedServer = server;
+            saveActiveVpnConfig(selectedServer);
             
             document.getElementById('selected-server-subtitle').textContent = `${server.name} • ${server.shortProto}`;
             document.getElementById('home-flag-container').innerHTML = flagSVGs[server.flagKey];
@@ -779,6 +952,7 @@
             setTimeout(() => {
                 isConnecting = false;
                 isConnected = true;
+                nativeConnectVPN(selectedServer);
 
                 // ធ្វើឱ្យសញ្ញា VPN លោតបង្ហាញនៅលើរបារស្ថានភាពទូរស័ព្ទខាងលើ
                 const statusVpnBadge = document.getElementById('phone-status-vpn-badge');
@@ -804,6 +978,7 @@
 
         function disconnectVPN() {
             isConnected = false;
+            nativeDisconnectVPN();
 
             // លាក់សញ្ញា VPN នៅលើរបារស្ថានភាពទូរស័ព្ទខាងលើវិញពេលផ្តាច់
             const statusVpnBadge = document.getElementById('phone-status-vpn-badge');
@@ -1498,6 +1673,11 @@ proto tcp</textarea>
 
         // ចាប់ផ្តើមដំណើរការទិន្នន័យដំបូង
         try {
+            const savedCfg = getSavedVpnConfig();
+            if (savedCfg && savedCfg.id) {
+                const matched = servers.find(s => s.id === savedCfg.id);
+                if (matched) selectedServer = matched;
+            }
             document.getElementById('home-flag-container').innerHTML = flagSVGs[selectedServer.flagKey];
             renderServers();
             renderHistory();
