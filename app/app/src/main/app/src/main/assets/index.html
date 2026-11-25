@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="km" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AegisVPN VIP - ប្រព័ន្ធការពារ និងល្បឿនលឿន</title>
+    <!-- ទាញយក Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- ទាញយកពុម្ពអក្សរខ្មែរ Kantumruy Pro និង Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kantumruy+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- ទាញយក Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Kantumruy Pro"', 'Inter', 'sans-serif'],
+                        mono: ['Inter', 'monospace'],
+                    },
+                    colors: {
+                        amoled: {
+                            bg: '#060608',
+                            card: '#121215',
+                            item: '#18181C',
+                            border: '#26262C',
+                            amber: '#F59E0B',
+                            cyan: '#06B6D4',
+                            blue: '#2563EB',
+                            emerald: '#10B981'
+                        }
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(6px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 15px rgba(16, 185, 129, 0.2)' },
+                            '50%': { boxShadow: '0 0 30px rgba(16, 185, 129, 0.5)' },
+                        },
+                        marqueeText: {
+                            '0%': { transform: 'translateX(0%)' },
+                            '100%': { transform: 'translateX(-50%)' },
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.25s ease-out forwards',
+                        'spin-slow': 'spin 8s linear infinite',
+                        'pulse-glow': 'pulseGlow 2.5s infinite',
+                        'marquee-text': 'marqueeText 9s linear infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* លាក់ Scrollbar តែអាចអូសចុះឡើងបានរលូន */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        /* ចលនារត់តួអក្សរឈ្មោះប្រទេស ហើយផ្អាកពេលដាក់ Mouse លើ */
+        .country-marquee-track {
+            display: inline-flex;
+            width: max-content;
+            animation: marqueeText 9s linear infinite;
+        }
+        .country-marquee-wrapper:hover .country-marquee-track {
+            animation-play-state: paused;
+        }
+    </style>
+</head>
+<body class="bg-[#000000] text-zinc-100 font-sans min-h-screen flex items-center justify-center p-0 sm:p-4 selection:bg-amber-500 selection:text-black">
+
+    <!-- ប្រអប់កម្មវិធីទម្រង់ទូរស័ព្ទទំនើប -->
+    <div class="w-full max-w-[430px] min-h-screen sm:min-h-[840px] sm:max-h-[880px] bg-amoled-bg sm:border sm:border-zinc-800/90 sm:rounded-[40px] shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col justify-between relative overflow-hidden">
+        
+        <!-- របារស្ថានភាពទូរស័ព្ទខាងលើ (Phone Status Bar) សម្រាប់បង្ហាញសញ្ញា VPN -->
+        <div class="px-6 pt-3 pb-1 flex items-center justify-between text-[11px] font-mono text-zinc-300 shrink-0 select-none">
+            <span class="font-bold text-white">9:41</span>
+            <div class="flex items-center gap-2">
+                <!-- សញ្ញា VPN ដែលនឹងលោតឡើងពេលចុចបើក VPN -->
+                <span id="phone-status-vpn-badge" class="hidden px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/60 text-emerald-400 font-bold text-[10px] tracking-wider shadow-[0_0_10px_rgba(16,185,129,0.35)]">
+                    VPN
+                </span>
+                <span class="text-[10px] font-semibold text-zinc-400">5G</span>
+                <div class="flex items-center gap-1">
+                    <span class="text-[10px] font-semibold text-emerald-400">98%</span>
+                    <div class="w-5 h-2.5 rounded-[3px] border border-zinc-400 p-[1.5px] flex items-center">
+                        <div id="phone-battery-fill" class="w-full h-full bg-emerald-400 rounded-[1px] transition-colors"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- របារស្ថានភាពខាងលើ (Top Header Bar) -->
+        <header class="px-5 pt-2 pb-2 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold text-white leading-tight">AegisVPN <span class="text-amber-400">VIP</span></h1>
+                    <p class="text-[10px] text-zinc-400">ប្រព័ន្ធការពារល្បឿនលឿន</p>
+                </div>
+            </div>
+            <div onclick="openModal('vip')" class="px-3 py-1.5 rounded-full bg-amoled-card border border-amoled-border flex items-center gap-1.5 cursor-pointer hover:border-zinc-600 transition-all">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="text-xs font-mono font-semibold text-zinc-200">85.4 GB</span>
+            </div>
+        </header>
+
+        <!-- ផ្នែកមាតិកាកណ្តាល (Main Scrollable Content) -->
+        <main class="flex-1 overflow-y-auto px-4 py-2 flex flex-col justify-between">
+            
+            <!-- ================= ទំព័រទី ១៖ ផ្ទះ (HOME TAB) ================= -->
+            <section id="tab-home" class="tab-content hidden flex-1 flex flex-col justify-between animate-fade-in">
+                <!-- កាតគ្រប់គ្រងការតភ្ជាប់ -->
+                <div class="bg-amoled-card border border-amoled-border rounded-[28px] p-5 relative overflow-hidden">
+                    <!-- ពន្លឺលម្អខាងក្រោយ -->
+                    <div id="home-glow" class="absolute -top-20 left-1/2 -translate-x-1/2 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none transition-colors duration-500"></div>
+
+                    <div class="flex items-center justify-between relative z-10">
+                        <span class="text-xs font-medium text-zinc-400">ស្ថានភាពបណ្តាញ</span>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/90 border border-zinc-800">
+                            <span id="status-dot" class="w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span id="status-text" class="text-xs font-medium text-zinc-300">មិនទាន់បានភ្ជាប់</span>
+                        </div>
+                    </div>
+
+                    <!-- ប៊ូតុងភ្ជាប់ VPN កណ្តាល -->
+                    <div class="my-6 flex flex-col items-center justify-center relative z-10">
+                        <div class="relative">
+                            <div id="power-ring-spin" class="hidden absolute -inset-3 rounded-full border-2 border-dashed border-emerald-400/60 animate-spin-slow"></div>
+                            <button id="connect-btn" onclick="toggleVPN()" class="relative w-36 h-36 rounded-full bg-gradient-to-b from-[#1E1E24] to-[#131317] border-4 border-zinc-700/80 shadow-2xl flex flex-col items-center justify-center gap-2 transition-all duration-300 active:scale-95">
+                                <i id="power-icon" data-lucide="power" class="w-12 h-12 text-zinc-400 transition-colors"></i>
+                                <span id="btn-label" class="text-xs font-semibold text-zinc-400">ចុចដើម្បីភ្ជាប់</span>
+                            </button>
+                        </div>
+
+                        <div class="mt-4 text-center">
+                            <p id="timer-display" class="font-mono text-2xl font-bold text-zinc-500 tracking-wider">00:00:00</p>
+                            <p class="text-[11px] text-zinc-400 mt-1">អាសយដ្ឋាន IP៖ <span id="ip-address" class="font-mono text-zinc-300">103.216.xxx.xxx (លាក់)</span></p>
+                        </div>
+                    </div>
+
+                    <!-- កាត Server ដែលកំពុងជ្រើសរើស -->
+                    <div onclick="switchTab('servers')" class="p-3.5 rounded-2xl bg-amoled-item border border-amoled-border flex items-center justify-between cursor-pointer hover:border-zinc-600 transition-all relative z-10">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <div id="home-flag-container" class="w-10 h-10 rounded-full bg-zinc-800/90 border border-zinc-700/70 flex items-center justify-center overflow-hidden shrink-0">
+                                <!-- ទង់ជាតិ SVG នឹងបង្ហាញនៅទីនេះ -->
+                            </div>
+                            <div class="min-w-0 flex-1 overflow-hidden">
+                                <div class="country-marquee-wrapper overflow-hidden whitespace-nowrap">
+                                    <div class="country-marquee-track">
+                                        <span id="home-server-name" class="text-sm font-bold text-white pr-8">វៀតណាម • ហូជីមិញ VIP</span>
+                                        <span id="home-server-name-dup" aria-hidden="true" class="text-sm font-bold text-amber-300/90 pr-8">វៀតណាម • ហូជីមិញ VIP</span>
+                                    </div>
+                                </div>
+                                <p id="home-server-desc" class="text-[11px] text-zinc-400 truncate">OpenVPN SSH Tunnel • ល្បឿនលឿន</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0 ml-2">
+                            <span id="home-server-ping" class="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-semibold">22 ms</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-zinc-500"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ស្ថិតិទិន្នន័យសង្ខេប -->
+                <div class="grid grid-cols-2 gap-3 my-2.5">
+                    <div class="p-3.5 rounded-2xl bg-amoled-card border border-amoled-border flex items-center gap-3">
+                        <div class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+                            <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-[11px] text-zinc-400">ល្បឿនទាញយក</p>
+                            <p id="download-speed" class="font-mono text-sm font-bold text-white">0.0 Mbps</p>
+                        </div>
+                    </div>
+                    <div class="p-3.5 rounded-2xl bg-amoled-card border border-amoled-border flex items-center gap-3">
+                        <div class="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400">
+                            <i data-lucide="arrow-up" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-[11px] text-zinc-400">ល្បឿនបង្ហោះ</p>
+                            <p id="upload-speed" class="font-mono text-sm font-bold text-white">0.0 Mbps</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= ទំព័រទី ២៖ ម៉ាស៊ីនមេ VIP (SERVERS TAB) ================= -->
+            <section id="tab-servers" class="tab-content flex-1 flex flex-col animate-fade-in">
+                <div class="bg-amoled-card border border-amoled-border rounded-[28px] p-4 sm:p-5 flex-1 flex flex-col">
+                    <!-- ក្បាលទំព័រ៖ បញ្ជីម៉ាស៊ីនមេ + ប៊ូតុង តេស្ត Ping និងបិទ (X) -->
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                                <i data-lucide="align-left" class="w-4 h-4"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h2 class="text-base sm:text-lg font-bold text-white tracking-tight truncate">បញ្ជីម៉ាស៊ីនមេ</h2>
+                                <p id="selected-server-subtitle" class="text-[11px] text-zinc-400 truncate">វៀតណាម • ហូជីមិញ VIP • OpenVPN SSH</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button id="ping-all-btn" onclick="testAllPings()" class="px-3 py-1.5 rounded-full bg-[#1C1C22] hover:bg-zinc-800 border border-zinc-700/80 text-[11px] font-semibold text-zinc-200 flex items-center gap-1.5 transition-all active:scale-95">
+                                <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                <span>តេស្ត Ping</span>
+                            </button>
+                            <button onclick="switchTab('home')" title="បិទ" class="w-8 h-8 rounded-full bg-[#1C1C22] hover:bg-zinc-800 border border-zinc-700/80 text-zinc-300 hover:text-white flex items-center justify-center transition-all active:scale-95">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- របារច្រោះប្រភេទម៉ាស៊ីនមេ -->
+                    <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+                        <button onclick="filterServers('all')" id="filter-all" class="filter-pill px-4 py-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-500/25 shrink-0 transition-all">
+                            <i data-lucide="zap" class="w-3.5 h-3.5 fill-white"></i>
+                            <span>ទាំងអស់</span>
+                        </button>
+                        <button onclick="filterServers('Xray V2Ray')" id="filter-Xray V2Ray" class="filter-pill px-4 py-2 rounded-full bg-[#16161B] border border-zinc-800 text-zinc-200 hover:border-zinc-600 font-bold text-xs shrink-0 transition-all">Xray V2Ray</button>
+                        <button onclick="filterServers('OpenVPN SSH')" id="filter-OpenVPN SSH" class="filter-pill px-4 py-2 rounded-full bg-[#16161B] border border-zinc-800 text-zinc-200 hover:border-zinc-600 font-bold text-xs shrink-0 transition-all">OpenVPN SSH</button>
+                        <button onclick="filterServers('SSH WS')" id="filter-SSH WS" class="filter-pill px-4 py-2 rounded-full bg-[#16161B] border border-zinc-800 text-zinc-200 hover:border-zinc-600 font-bold text-xs shrink-0 transition-all">SSH WS</button>
+                        <button onclick="filterServers('Shadowsocks')" id="filter-Shadowsocks" class="filter-pill px-4 py-2 rounded-full bg-[#16161B] border border-zinc-800 text-zinc-200 hover:border-zinc-600 font-bold text-xs shrink-0 transition-all">Shadowsocks</button>
+                    </div>
+
+                    <!-- បញ្ជីកាត Server នីមួយៗ -->
+                    <div id="server-list" class="space-y-2.5 overflow-y-auto pr-0.5">
+                        <!-- បង្កើតដោយ JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= ទំព័រទី ៣៖ តេស្តល្បឿន (SPEED TEST TAB) ================= -->
+            <section id="tab-speed" class="tab-content hidden flex-1 flex flex-col animate-fade-in">
+                <div class="bg-amoled-card border border-amoled-border rounded-[28px] p-5 flex-1 flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-base font-bold text-white">តេស្តល្បឿនអ៊ីនធឺណិត</h2>
+                            <p class="text-xs text-zinc-400 mt-0.5">វាស់ស្ទង់ល្បឿនជាក់ស្តែងនៃម៉ាស៊ីនមេ VIP</p>
+                        </div>
+                        <span id="st-server-badge" class="px-2.5 py-1 rounded-full bg-zinc-800 text-zinc-300 text-[11px] font-medium">វៀតណាម VIP</span>
+                    </div>
+
+                    <div class="my-5 flex flex-col items-center justify-center">
+                        <div class="relative w-44 h-44 rounded-full bg-amoled-item border-4 border-zinc-800/90 flex flex-col items-center justify-center shadow-inner">
+                            <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="44" fill="none" stroke="#27272A" stroke-width="5" />
+                                <circle id="speed-gauge-arc" cx="50" cy="50" r="44" fill="none" stroke="#F59E0B" stroke-width="5" stroke-dasharray="276" stroke-dashoffset="276" stroke-linecap="round" class="transition-all duration-300" />
+                            </svg>
+                            <span id="speed-test-phase" class="text-[11px] font-semibold text-amber-400 mb-1">រួចរាល់</span>
+                            <span id="speed-test-value" class="font-mono text-3xl font-bold text-white">0.0</span>
+                            <span class="text-[11px] text-zinc-400">Mbps</span>
+                        </div>
+
+                        <button id="start-speedtest-btn" onclick="runSpeedTest()" class="mt-6 px-8 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all active:scale-95">
+                            <i data-lucide="play" class="w-3.5 h-3.5 fill-black"></i>
+                            <span>ចាប់ផ្តើមតេស្តល្បឿន</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2.5">
+                        <div class="p-3 rounded-2xl bg-amoled-item border border-amoled-border text-center">
+                            <p class="text-[11px] text-zinc-400">Ping</p>
+                            <p id="st-ping" class="font-mono text-sm font-bold text-emerald-400 mt-0.5">-- ms</p>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-amoled-item border border-amoled-border text-center">
+                            <p class="text-[11px] text-zinc-400">ទាញយក</p>
+                            <p id="st-download" class="font-mono text-sm font-bold text-white mt-0.5">-- Mbps</p>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-amoled-item border border-amoled-border text-center">
+                            <p class="text-[11px] text-zinc-400">បង្ហោះ</p>
+                            <p id="st-upload" class="font-mono text-sm font-bold text-cyan-400 mt-0.5">-- Mbps</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= ទំព័រទី ៤៖ កំណត់ត្រា (HISTORY / LOGS TAB) ================= -->
+            <section id="tab-history" class="tab-content hidden flex-1 flex flex-col animate-fade-in">
+                <div class="bg-amoled-card border border-amoled-border rounded-[28px] p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 class="text-base font-bold text-white">កំណត់ត្រាការប្រើប្រាស់</h2>
+                                <p class="text-xs text-zinc-400 mt-0.5">ប្រវត្តិនៃការតភ្ជាប់ និងទិន្នន័យប្រើប្រាស់</p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 font-mono text-[11px] font-bold">សរុប: 14.8 GB</span>
+                        </div>
+
+                        <div id="history-list" class="space-y-2.5">
+                            <!-- បង្កើតដោយ JavaScript -->
+                        </div>
+                    </div>
+
+                    <button onclick="clearHistory()" class="w-full py-2.5 rounded-2xl bg-amoled-item hover:bg-zinc-800 border border-amoled-border text-xs font-medium text-zinc-400 hover:text-rose-400 transition-colors">
+                        សម្អាតកំណត់ត្រាទាំងអស់
+                    </button>
+                </div>
+            </section>
+
+            <!-- ================= ទំព័រទី ៥៖ កំណត់ (SETTINGS TAB) ================= -->
+            <section id="tab-settings" class="tab-content hidden flex-1 flex flex-col animate-fade-in">
+                <div class="bg-amoled-card border border-amoled-border rounded-[28px] p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-white mb-1">កំណត់ប្រព័ន្ធ</h2>
+                        <p class="text-xs text-zinc-400 mb-4">មុខងារការពារសុវត្ថិភាព និងការបង្កើនល្បឿន</p>
+
+                        <div class="space-y-2.5">
+                            <!-- ១. Kill Switch -->
+                            <div class="p-3.5 rounded-2xl bg-amoled-item border border-amoled-border flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 rounded-xl bg-rose-500/10 text-rose-400">
+                                        <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-white">ប្រព័ន្ធ Kill Switch</p>
+                                        <p class="text-[11px] text-zinc-400">ផ្តាច់អ៊ីនធឺណិតភ្លាមៗពេលដាច់ VPN</p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" checked onchange="showToast('បានរក្សាទុកការកំណត់ Kill Switch')" class="sr-only peer">
+                                    <div class="w-10 h-5 bg-zinc-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                </label>
+                            </div>
+
+                            <!-- ២. AdBlock & Malware -->
+                            <div class="p-3.5 rounded-2xl bg-amoled-item border border-amoled-border flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+                                        <i data-lucide="ban" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-white">ទប់ស្កាត់ការផ្សាយពាណិជ្ជកម្ម</p>
+                                        <p class="text-[11px] text-zinc-400">បិទ Ads និងគេហទំព័រមេរោគដោយស្វ័យប្រវត្តិ</p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" checked onchange="showToast('បានបើកមុខងារទប់ស្កាត់ពាណិជ្ជកម្ម')" class="sr-only peer">
+                                    <div class="w-10 h-5 bg-zinc-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                </label>
+                            </div>
+
+                            <!-- ៣. Gaming Mode -->
+                            <div class="p-3.5 rounded-2xl bg-amoled-item border border-amoled-border flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                                        <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-white">មុខងារលេងហ្គេម (Low Ping)</p>
+                                        <p class="text-[11px] text-zinc-400">កាត់បន្ថយភាពយឺតយ៉ាវ UDP / TCP</p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" checked onchange="showToast('បានបើកមុខងារលេងហ្គេម')" class="sr-only peer">
+                                    <div class="w-10 h-5 bg-zinc-700 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                </label>
+                            </div>
+
+                            <!-- ៤. Split Tunneling -->
+                            <div onclick="openModal('split')" class="p-3.5 rounded-2xl bg-amoled-item border border-amoled-border hover:border-zinc-600 flex items-center justify-between cursor-pointer transition-all">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
+                                        <i data-lucide="git-fork" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-white">បំបែកកម្មវិធី (Split Tunneling)</p>
+                                        <p class="text-[11px] text-zinc-400">ជ្រើសរើសកម្មវិធីដែលត្រូវប្រើ VPN</p>
+                                    </div>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-zinc-500"></i>
+                            </div>
+
+                            <!-- ៥. មុខងារ Admin គ្រប់គ្រងម៉ាស៊ីនមេ និងកំណត់ផ្ទាល់ខ្លួន -->
+                            <div onclick="openModal('admin')" class="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-cyan-500/10 border border-amber-500/40 hover:border-amber-400 flex items-center justify-between cursor-pointer transition-all shadow-lg shadow-amber-500/5">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+                                        <i data-lucide="shield-user" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-1.5">
+                                            <p class="text-xs font-bold text-white">គ្រប់គ្រងម៉ាស៊ីនមេ (Admin)</p>
+                                            <span class="px-1.5 py-0.5 rounded bg-amber-500 text-black text-[9px] font-bold">ADMIN</span>
+                                        </div>
+                                        <p class="text-[11px] text-zinc-300">កំណត់ V2Ray, Hysteria2, SSH, OpenVPN</p>
+                                    </div>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-amber-400"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-2xl bg-zinc-900/90 border border-zinc-800 flex items-center justify-between text-xs mt-3">
+                        <span class="text-zinc-400">លេខសម្គាល់គណនី៖</span>
+                        <span class="font-mono text-white font-semibold">VIP-8849201</span>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- ផ្នែកខាងក្រោម៖ ប៊ូតុងសកម្មភាពរហ័ស ៣ ពណ៌ + របារមីនុយ ៥ ផ្នែក -->
+        <footer class="px-4 pb-5 pt-2 bg-amoled-bg shrink-0">
+            <!-- ប៊ូតុងសកម្មភាពរហ័ស ៣ ពណ៌ -->
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                <!-- ប៊ូតុងទី ១៖ គណនី VIP -->
+                <button onclick="openModal('vip')" class="py-2 px-2.5 rounded-full bg-[#F59E0B] hover:bg-amber-400 text-black font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/15 transition-transform active:scale-95">
+                    <span class="w-4 h-4 rounded-full bg-black text-amber-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="crown" class="w-2.5 h-2.5 fill-amber-400"></i>
+                    </span>
+                    <span class="truncate">គណនី VIP</span>
+                </button>
+
+                <!-- ប៊ូតុងទី ២៖ Bot ទិញ GB -->
+                <button onclick="openModal('bot')" class="py-2 px-2.5 rounded-full bg-[#22B8CF] hover:bg-cyan-400 text-black font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-500/15 transition-transform active:scale-95">
+                    <span class="w-4 h-4 rounded-full bg-white text-[#22B8CF] flex items-center justify-center shrink-0">
+                        <i data-lucide="send" class="w-2.5 h-2.5 fill-[#22B8CF]"></i>
+                    </span>
+                    <span class="truncate">Bot ទិញ GB</span>
+                </button>
+
+                <!-- ប៊ូតុងទី ៣៖ របៀបទិញ -->
+                <button onclick="openModal('guide')" class="py-2 px-2.5 rounded-full bg-[#2563EB] hover:bg-blue-500 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-blue-600/15 transition-transform active:scale-95">
+                    <span class="w-4 h-4 rounded-full bg-amber-400 text-black flex items-center justify-center font-bold text-[10px] shrink-0">?</span>
+                    <span class="truncate">របៀបទិញ</span>
+                </button>
+            </div>
+
+            <!-- របារមីនុយខាងក្រោម ៥ ផ្នែក -->
+            <nav class="bg-amoled-card border border-amoled-border rounded-[26px] px-2 py-2 grid grid-cols-5 items-center">
+                <!-- ១. ផ្ទះ -->
+                <button onclick="switchTab('home')" id="nav-home" class="nav-item flex flex-col items-center justify-center gap-1 py-1 text-zinc-500 hover:text-zinc-300 transition-colors">
+                    <div id="nav-icon-home" class="w-9 h-7 rounded-xl flex items-center justify-center transition-all">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-[11px] font-medium">ផ្ទះ</span>
+                </button>
+
+                <!-- ២. ម៉ាស៊ីនមេ (Active ដំបូង) -->
+                <button onclick="switchTab('servers')" id="nav-servers" class="nav-item flex flex-col items-center justify-center gap-1 py-1 text-amber-400 transition-colors">
+                    <div id="nav-icon-servers" class="w-9 h-7 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center transition-all">
+                        <i data-lucide="server" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-[11px] font-bold">ម៉ាស៊ីនមេ</span>
+                </button>
+
+                <!-- ៣. តេស្តល្បឿន -->
+                <button onclick="switchTab('speed')" id="nav-speed" class="nav-item flex flex-col items-center justify-center gap-1 py-1 text-zinc-500 hover:text-zinc-300 transition-colors">
+                    <div id="nav-icon-speed" class="w-9 h-7 rounded-xl flex items-center justify-center transition-all">
+                        <i data-lucide="gauge" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-[11px] font-medium">តេស្តល្បឿន</span>
+                </button>
+
+                <!-- ៤. កំណត់ត្រា -->
+                <button onclick="switchTab('history')" id="nav-history" class="nav-item flex flex-col items-center justify-center gap-1 py-1 text-zinc-500 hover:text-zinc-300 transition-colors">
+                    <div id="nav-icon-history" class="w-9 h-7 rounded-xl flex items-center justify-center transition-all">
+                        <i data-lucide="history" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-[11px] font-medium">កំណត់ត្រា</span>
+                </button>
+
+                <!-- ៥. កំណត់ -->
+                <button onclick="switchTab('settings')" id="nav-settings" class="nav-item flex flex-col items-center justify-center gap-1 py-1 text-zinc-500 hover:text-zinc-300 transition-colors">
+                    <div id="nav-icon-settings" class="w-9 h-7 rounded-xl flex items-center justify-center transition-all">
+                        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                    </div>
+                    <span class="text-[11px] font-medium">កំណត់</span>
+                </button>
+            </nav>
+        </footer>
+
+        <!-- ផ្ទាំង Modal បង្ហាញព័ត៌មានលម្អិត -->
+        <div id="info-modal" class="hidden absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-fade-in">
+            <div class="w-full max-h-[88vh] overflow-y-auto bg-amoled-card border border-zinc-800 rounded-3xl p-5 shadow-2xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 id="modal-title" class="text-base font-bold text-white">ព័ត៌មាន</h3>
+                    <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div id="modal-body" class="text-xs text-zinc-300 space-y-2.5 leading-relaxed">
+                    <!-- ខ្លឹមសារ Modal -->
+                </div>
+                <button id="modal-footer-btn" onclick="closeModal()" class="mt-5 w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition-colors">យល់ព្រម</button>
+            </div>
+        </div>
+
+        <!-- ប្រអប់ជូនដំណឹងតូច (Toast Notification) -->
+        <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-zinc-900/95 border border-zinc-700 text-white text-xs font-medium shadow-2xl flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 -translate-y-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="toast-message">សារជូនដំណឹង</span>
+        </div>
+
+    </div>
+
+    <script>
+        // បង្កើត Icons ទាំងអស់ពី Lucide
+        lucide.createIcons();
+
+        // ទង់ជាតិ SVG គុណភាពខ្ពស់
+        const flagSVGs = {
+            kh: `<svg viewBox="0 0 64 64" class="w-7 h-7 rounded-full object-cover shadow-sm">
+                    <rect width="64" height="64" fill="#032EA1"/>
+                    <rect y="16" width="64" height="32" fill="#E00025"/>
+                    <path d="M22 40h20v-4h-2v-6h-3v-5l-5-4-5 4v5h-3v6h-2v4z" fill="#FFFFFF"/>
+                 </svg>`,
+            sg: `<svg viewBox="0 0 64 64" class="w-7 h-7 rounded-full object-cover shadow-sm">
+                    <rect width="64" height="32" fill="#EF3340"/>
+                    <rect y="32" width="64" height="32" fill="#FFFFFF"/>
+                    <circle cx="21" cy="16" r="8" fill="#FFFFFF"/>
+                    <circle cx="24" cy="16" r="7" fill="#EF3340"/>
+                    <circle cx="28" cy="12" r="1.3" fill="#FFFFFF"/>
+                    <circle cx="32" cy="15" r="1.3" fill="#FFFFFF"/>
+                    <circle cx="30" cy="20" r="1.3" fill="#FFFFFF"/>
+                    <circle cx="25" cy="20" r="1.3" fill="#FFFFFF"/>
+                    <circle cx="24" cy="15" r="1.3" fill="#FFFFFF"/>
+                 </svg>`,
+            vn: `<svg viewBox="0 0 64 64" class="w-7 h-7 rounded-full object-cover shadow-sm">
+                    <rect width="64" height="64" fill="#DA251D"/>
+                    <polygon points="32,16 36.5,28.5 50,28.5 39,36.5 43,49 32,41.5 21,49 25,36.5 14,28.5 27.5,28.5" fill="#FFFF00"/>
+                 </svg>`,
+            hk: `<svg viewBox="0 0 64 64" class="w-7 h-7 rounded-full object-cover shadow-sm">
+                    <rect width="64" height="64" fill="#DE2910"/>
+                    <circle cx="32" cy="32" r="11" fill="#FFFFFF" opacity="0.9"/>
+                    <circle cx="32" cy="32" r="4" fill="#DE2910"/>
+                 </svg>`,
+            jp: `<svg viewBox="0 0 64 64" class="w-7 h-7 rounded-full object-cover shadow-sm">
+                    <rect width="64" height="64" fill="#FFFFFF"/>
+                    <circle cx="32" cy="32" r="14" fill="#BC002D"/>
+                 </svg>`
+        };
+
+        // ទិន្នន័យម៉ាស៊ីនមេ VIP
+        const servers = [
+            {
+                id: 'kh',
+                name: 'កម្ពុជា • ភ្នំពេញ VIP',
+                subtitle: 'Xray V2Ray (Vless WS + TLS) • Ping ទាបបំផុត',
+                shortProto: 'Xray V2Ray',
+                protocol: 'Xray V2Ray',
+                ssUri: 'vless://aegis-kh-uuid@kh-vless.aegisvpn.net:443?type=ws&path=/vless-ws#KH_XRAY_V2RAY',
+                flagKey: 'kh',
+                ping: 12
+            },
+            {
+                id: 'sg',
+                name: 'សិង្ហបុរី • Direct VIP',
+                subtitle: 'Xray V2Ray (Vmess WS + AEAD) • លេងហ្គេម & 4K',
+                shortProto: 'Xray V2Ray',
+                protocol: 'Xray V2Ray',
+                ssUri: 'vmess://eyJhZGQiOiJzZy12bWVzcy5hZWdpc3Zwbi5uZXQiLCJwb3J0Ijo0NDMsIm5ldCI6IndzIiwicGF0aCI6Ii92bWVzcy13cyJ9',
+                flagKey: 'sg',
+                ping: 24
+            },
+            {
+                id: 'vn',
+                name: 'វៀតណាម • ហូជីមិញ VIP',
+                subtitle: 'OpenVPN SSH Tunnel • ល្បឿនលឿន',
+                shortProto: 'OpenVPN SSH',
+                protocol: 'OpenVPN SSH',
+                ssUri: 'openvpn+ssh://vip-user@vn-ssh.aegisvpn.net:2222?proto=ovpn-ssh#VN_OPENVPN_SSH',
+                flagKey: 'vn',
+                ping: 22
+            },
+            {
+                id: 'hk',
+                name: 'ហុងកុង • CN2 VIP',
+                subtitle: 'Xray V2Ray CDN • ផ្លូវតភ្ជាប់រហ័ស',
+                shortProto: 'Xray V2Ray',
+                protocol: 'Xray V2Ray',
+                ssUri: 'vless://aegis-hk-uuid@hk-vless.aegisvpn.net:443?type=ws&path=/hk-ws#HK_XRAY_V2RAY',
+                flagKey: 'hk',
+                ping: 36
+            },
+            {
+                id: 'jp',
+                name: 'ជប៉ុន • តូក្យូ VIP',
+                subtitle: 'Xray V2Ray + TLS • មើលវីដេអូ 4K',
+                shortProto: 'Xray V2Ray',
+                protocol: 'Xray V2Ray',
+                ssUri: 'vmess://eyJhZGQiOiJqcC12bWVzcy5hZWdpc3Zwbi5uZXQiLCJwb3J0Ijo0NDMsIm5ldCI6IndzIiwicGF0aCI6Ii9qcC13cyJ9',
+                flagKey: 'jp',
+                ping: 48
+            },
+            {
+                id: 'sg-sshws',
+                name: 'សិង្ហបុរី • SSH WS VIP',
+                subtitle: 'SSH WebSocket + CDN • តភ្ជាប់រហ័ស & ស្ថេរភាព',
+                shortProto: 'SSH WS',
+                protocol: 'SSH WS',
+                ssUri: 'ssh+ws://vip-sshws@sg-sshws.aegisvpn.net:80?path=/ssh-ws#SG_SSH_WS',
+                flagKey: 'sg',
+                ping: 26
+            }
+        ];
+
+        // ប្រវត្តិការតភ្ជាប់
+        let historyData = [
+            { flagKey: 'vn', name: 'វៀតណាម • ហូជីមិញ VIP', time: 'ថ្ងៃនេះ • 02 ម៉ោង 15 នាទី', data: '4.2 GB' },
+            { flagKey: 'kh', name: 'កម្ពុជា • ភ្នំពេញ VIP', time: 'ម្សិលមិញ • 05 ម៉ោង 40 នាទី', data: '6.8 GB' },
+            { flagKey: 'sg', name: 'សិង្ហបុរី • Direct VIP', time: '23 វិច្ឆិកា • 01 ម៉ោង 50 នាទី', data: '3.8 GB' }
+        ];
+
+        let selectedServer = servers[2];
+        let currentFilter = 'all';
+        let isConnected = false;
+        let isConnecting = false;
+        let timerInterval = null;
+        let speedInterval = null;
+        let secondsElapsed = 0;
+        let isSpeedTesting = false;
+        let isVipUnlocked = false;
+
+        // បង្ហាញបញ្ជីម៉ាស៊ីនមេ VIP
+        function renderServers() {
+            const listContainer = document.getElementById('server-list');
+            listContainer.innerHTML = '';
+
+            const filtered = currentFilter === 'all' 
+                ? servers 
+                : servers.filter(s => s.protocol === currentFilter);
+
+            filtered.forEach(server => {
+                const isSelected = selectedServer.id === server.id;
+                
+                let pingBadgeClass = 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400';
+                if (server.ping > 30 && server.ping <= 60) {
+                    pingBadgeClass = 'bg-amber-500/15 border-amber-500/30 text-amber-400';
+                } else if (server.ping > 60) {
+                    pingBadgeClass = 'bg-rose-500/15 border-rose-500/30 text-rose-400';
+                }
+
+                const cardClass = isSelected
+                    ? 'bg-[#1C1C21] border-amber-400/70 shadow-lg shadow-amber-500/5'
+                    : 'bg-amoled-item border-amoled-border hover:border-zinc-700';
+
+                const card = document.createElement('div');
+                card.onclick = () => selectServer(server);
+                card.className = `p-3.5 rounded-[22px] border cursor-pointer transition-all duration-200 flex items-center justify-between ${cardClass}`;
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        <div class="w-11 h-11 rounded-full bg-[#24242A] border border-zinc-700/80 flex items-center justify-center shrink-0 overflow-hidden">
+                            ${flagSVGs[server.flagKey]}
+                        </div>
+                        <div class="min-w-0 flex-1 overflow-hidden">
+                            <div class="flex items-center gap-1.5">
+                                <div class="country-marquee-wrapper overflow-hidden whitespace-nowrap max-w-[155px] sm:max-w-[175px]">
+                                    <div class="country-marquee-track">
+                                        <span class="text-[13px] sm:text-sm font-bold text-white pr-6">${server.name}</span>
+                                        <span aria-hidden="true" class="text-[13px] sm:text-sm font-bold text-amber-300/90 pr-6">${server.name}</span>
+                                    </div>
+                                </div>
+                                <span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono text-[9px] font-bold shrink-0">${server.protocol}</span>
+                                ${isSelected ? '<span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>' : ''}
+                            </div>
+                            <p class="text-[11px] text-zinc-400 mt-0.5 truncate">${server.subtitle}</p>
+                            <p class="text-[10px] font-mono text-cyan-400/80 mt-0.5 truncate">${server.ssUri}</p>
+                        </div>
+                    </div>
+
+                    <div class="shrink-0 ml-2 flex items-center gap-1.5">
+                        ${!isVipUnlocked ? '<span class="w-6 h-6 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center" title="ចាក់សោ VIP"><i data-lucide="lock" class="w-3 h-3"></i></span>' : ''}
+                        <span class="inline-block px-3 py-1 rounded-full border font-mono text-xs font-semibold ${pingBadgeClass}">
+                            ${server.ping} ms
+                        </span>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        // មុខងារច្រោះប្រភេទ Protocol
+        function filterServers(protocol) {
+            currentFilter = protocol;
+            document.querySelectorAll('.filter-pill').forEach(btn => {
+                btn.className = 'filter-pill px-4 py-2 rounded-full bg-[#16161B] border border-zinc-800 text-zinc-200 hover:border-zinc-600 font-bold text-xs flex items-center gap-1.5 shrink-0 transition-all';
+            });
+            const activeBtn = document.getElementById(`filter-${protocol}`);
+            if (activeBtn) {
+                activeBtn.className = 'filter-pill px-4 py-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#2563EB] text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-500/25 shrink-0 transition-all';
+            }
+            renderServers();
+        }
+
+        // មុខងារជ្រើសរើស Server
+        function selectServer(server) {
+            if (!isVipUnlocked) {
+                showToast('សូមបញ្ចូល CODE V ដើម្បីដោះសោម៉ាស៊ីនមេ VIP!');
+                openModal('vip');
+                return;
+            }
+            selectedServer = server;
+            
+            document.getElementById('selected-server-subtitle').textContent = `${server.name} • ${server.shortProto}`;
+            document.getElementById('home-flag-container').innerHTML = flagSVGs[server.flagKey];
+            document.getElementById('home-server-name').textContent = server.name;
+            const homeNameDup = document.getElementById('home-server-name-dup');
+            if (homeNameDup) homeNameDup.textContent = server.name;
+            document.getElementById('home-server-desc').textContent = server.subtitle;
+            document.getElementById('home-server-ping').textContent = `${server.ping} ms`;
+            document.getElementById('st-server-badge').textContent = server.name;
+
+            renderServers();
+            showToast(`បានជ្រើសរើស ${server.name}`);
+        }
+
+        // មុខងារចុចប៊ូតុង "តេស្ត Ping" ទាំងអស់
+        function testAllPings() {
+            const btn = document.getElementById('ping-all-btn');
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 text-emerald-400 animate-spin"></i><span>កំពុងតេស្ត...</span>`;
+            lucide.createIcons();
+
+            setTimeout(() => {
+                servers.forEach(s => {
+                    const variance = Math.floor(Math.random() * 5) - 2;
+                    s.ping = Math.max(9, s.ping + variance);
+                });
+                renderServers();
+                document.getElementById('home-server-ping').textContent = `${selectedServer.ping} ms`;
+                
+                btn.innerHTML = `<i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-emerald-400"></i><span>តេស្ត Ping</span>`;
+                lucide.createIcons();
+                showToast('បានធ្វើបច្ចុប្បន្នភាព Ping រួចរាល់!');
+            }, 600);
+        }
+
+        // មុខងារប្តូរផ្ទាំងមីនុយខាងក្រោមទាំង ៥
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            const tabs = ['home', 'servers', 'speed', 'history', 'settings'];
+            tabs.forEach(t => {
+                const navBtn = document.getElementById(`nav-${t}`);
+                const iconBox = document.getElementById(`nav-icon-${t}`);
+                const label = navBtn.querySelector('span');
+
+                if (t === tabName) {
+                    navBtn.className = 'nav-item flex flex-col items-center justify-center gap-1 py-1 text-amber-400 transition-colors';
+                    iconBox.className = 'w-9 h-7 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center transition-all';
+                    label.className = 'text-[11px] font-bold';
+                } else {
+                    navBtn.className = 'nav-item flex flex-col items-center justify-center gap-1 py-1 text-zinc-500 hover:text-zinc-300 transition-colors';
+                    iconBox.className = 'w-9 h-7 rounded-xl flex items-center justify-center transition-all';
+                    label.className = 'text-[11px] font-medium';
+                }
+            });
+        }
+
+        // មុខងារភ្ជាប់ / ផ្តាច់ VPN នៅទំព័រផ្ទះ
+        function toggleVPN() {
+            if (isConnecting) return;
+            isConnected ? disconnectVPN() : connectVPN();
+        }
+
+        function connectVPN() {
+            if (!isVipUnlocked) {
+                showToast('កញ្ចប់ VIP កំពុងចាក់សោ! សូមបញ្ចូល CODE V');
+                openModal('vip');
+                return;
+            }
+            isConnecting = true;
+            document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+            document.getElementById('status-text').textContent = 'កំពុងភ្ជាប់...';
+            document.getElementById('btn-label').textContent = 'កំពុងភ្ជាប់...';
+            document.getElementById('power-ring-spin').classList.remove('hidden');
+
+            setTimeout(() => {
+                isConnecting = false;
+                isConnected = true;
+
+                // ធ្វើឱ្យសញ្ញា VPN លោតបង្ហាញនៅលើរបារស្ថានភាពទូរស័ព្ទខាងលើ
+                const statusVpnBadge = document.getElementById('phone-status-vpn-badge');
+                if (statusVpnBadge) {
+                    statusVpnBadge.classList.remove('hidden');
+                    statusVpnBadge.classList.add('animate-pulse');
+                }
+
+                document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+                document.getElementById('status-text').textContent = 'បានភ្ជាប់ (VIP សុវត្ថិភាព)';
+                document.getElementById('connect-btn').className = 'relative w-36 h-36 rounded-full bg-gradient-to-b from-emerald-950/60 to-zinc-900 border-4 border-emerald-400 animate-pulse-glow flex flex-col items-center justify-center gap-2 transition-all duration-300 active:scale-95';
+                document.getElementById('power-icon').className = 'w-12 h-12 text-emerald-400 transition-colors';
+                document.getElementById('btn-label').textContent = 'បានភ្ជាប់';
+                document.getElementById('btn-label').className = 'text-xs font-bold text-emerald-400';
+                document.getElementById('home-glow').className = 'absolute -top-20 left-1/2 -translate-x-1/2 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none transition-colors duration-500';
+                document.getElementById('ip-address').textContent = '172.67.188.42 (បានការពារ)';
+
+                startTimer();
+                startSpeedSimulation();
+                showToast(`បានភ្ជាប់ទៅ ${selectedServer.name}`);
+            }, 800);
+        }
+
+        function disconnectVPN() {
+            isConnected = false;
+
+            // លាក់សញ្ញា VPN នៅលើរបារស្ថានភាពទូរស័ព្ទខាងលើវិញពេលផ្តាច់
+            const statusVpnBadge = document.getElementById('phone-status-vpn-badge');
+            if (statusVpnBadge) {
+                statusVpnBadge.classList.add('hidden');
+                statusVpnBadge.classList.remove('animate-pulse');
+            }
+
+            document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-rose-500';
+            document.getElementById('status-text').textContent = 'មិនទាន់បានភ្ជាប់';
+            document.getElementById('connect-btn').className = 'relative w-36 h-36 rounded-full bg-gradient-to-b from-[#1E1E24] to-[#131317] border-4 border-zinc-700/80 shadow-2xl flex flex-col items-center justify-center gap-2 transition-all duration-300 active:scale-95';
+            document.getElementById('power-icon').className = 'w-12 h-12 text-zinc-400 transition-colors';
+            document.getElementById('btn-label').textContent = 'ចុចដើម្បីភ្ជាប់';
+            document.getElementById('btn-label').className = 'text-xs font-semibold text-zinc-400';
+            document.getElementById('power-ring-spin').classList.add('hidden');
+            document.getElementById('home-glow').className = 'absolute -top-20 left-1/2 -translate-x-1/2 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none transition-colors duration-500';
+            document.getElementById('ip-address').textContent = '103.216.xxx.xxx (លាក់)';
+
+            clearInterval(timerInterval);
+            secondsElapsed = 0;
+            document.getElementById('timer-display').textContent = '00:00:00';
+            document.getElementById('timer-display').className = 'font-mono text-2xl font-bold text-zinc-500 tracking-wider';
+
+            clearInterval(speedInterval);
+            document.getElementById('download-speed').textContent = '0.0 Mbps';
+            document.getElementById('upload-speed').textContent = '0.0 Mbps';
+            showToast('បានផ្តាច់ការតភ្ជាប់ VPN');
+        }
+
+        function startTimer() {
+            secondsElapsed = 0;
+            const el = document.getElementById('timer-display');
+            el.className = 'font-mono text-2xl font-bold text-white tracking-wider';
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                const h = String(Math.floor(secondsElapsed / 3600)).padStart(2, '0');
+                const m = String(Math.floor((secondsElapsed % 3600) / 60)).padStart(2, '0');
+                const s = String(secondsElapsed % 60).padStart(2, '0');
+                el.textContent = `${h}:${m}:${s}`;
+            }, 1000);
+        }
+
+        function startSpeedSimulation() {
+            speedInterval = setInterval(() => {
+                const dl = (Math.random() * 60 + 85).toFixed(1);
+                const ul = (Math.random() * 25 + 35).toFixed(1);
+                document.getElementById('download-speed').textContent = `${dl} Mbps`;
+                document.getElementById('upload-speed').textContent = `${ul} Mbps`;
+            }, 1500);
+        }
+
+        // មុខងារតេស្តល្បឿន (Speed Test)
+        function runSpeedTest() {
+            if (isSpeedTesting) return;
+            isSpeedTesting = true;
+            const btn = document.getElementById('start-speedtest-btn');
+            const phaseEl = document.getElementById('speed-test-phase');
+            const valEl = document.getElementById('speed-test-value');
+            const arcEl = document.getElementById('speed-gauge-arc');
+
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            phaseEl.textContent = 'កំពុងវាស់ Ping...';
+
+            setTimeout(() => {
+                document.getElementById('st-ping').textContent = `${selectedServer.ping} ms`;
+                phaseEl.textContent = 'កំពុងវាស់ទាញយក...';
+                let step = 0;
+                const targetDl = Math.random() * 50 + 110;
+                const timer = setInterval(() => {
+                    step++;
+                    const cur = (targetDl * (step / 18)).toFixed(1);
+                    valEl.textContent = cur;
+                    arcEl.style.strokeDashoffset = 276 - (Math.min(cur, 200) / 200) * 276;
+
+                    if (step >= 18) {
+                        clearInterval(timer);
+                        document.getElementById('st-download').textContent = `${targetDl.toFixed(1)} Mbps`;
+                        const ul = (targetDl * 0.48).toFixed(1);
+                        document.getElementById('st-upload').textContent = `${ul} Mbps`;
+                        phaseEl.textContent = 'រួចរាល់';
+                        isSpeedTesting = false;
+                        btn.disabled = false;
+                        btn.classList.remove('opacity-50');
+                        showToast('ការតេស្តល្បឿនបានបញ្ចប់!');
+                    }
+                }, 90);
+            }, 500);
+        }
+
+        // បង្ហាញបញ្ជីកំណត់ត្រា
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            if (historyData.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-xs text-zinc-500">មិនទាន់មានកំណត់ត្រាប្រើប្រាស់នៅឡើយទេ</div>`;
+                return;
+            }
+            container.innerHTML = historyData.map(item => `
+                <div class="p-3.5 rounded-2xl bg-amoled-item border border-amoled-border flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                            ${flagSVGs[item.flagKey]}
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-white">${item.name}</p>
+                            <p class="text-[11px] text-zinc-400">${item.time}</p>
+                        </div>
+                    </div>
+                    <span class="font-mono text-xs font-semibold text-emerald-400">${item.data}</span>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            historyData = [];
+            renderHistory();
+            showToast('បានសម្អាតកំណត់ត្រាទាំងអស់');
+        }
+
+        // មុខងារបើក Modal
+        function openModal(type) {
+            const modal = document.getElementById('info-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+            const footerBtn = document.getElementById('modal-footer-btn');
+            footerBtn.classList.remove('hidden');
+
+            if (type === 'vip') {
+                title.textContent = 'កញ្ចប់ម៉ាស៊ីនមេ VIP';
+                footerBtn.classList.add('hidden');
+                
+                const bundleListHTML = servers.slice(0, 5).map(s => `
+                    <div class="p-2.5 rounded-xl bg-amoled-item border ${isVipUnlocked ? 'border-emerald-500/30' : 'border-zinc-800/90'} flex items-center justify-between">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-7 h-7 rounded-full overflow-hidden shrink-0 ${!isVipUnlocked ? 'opacity-70 grayscale-[30%]' : ''}">
+                                ${flagSVGs[s.flagKey]}
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[11px] font-bold text-white truncate">${s.name}</p>
+                                <p class="text-[10px] text-zinc-400 truncate">${s.shortProto} • ${s.ping} ms</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shrink-0 ${isVipUnlocked ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'}">
+                            <i data-lucide="${isVipUnlocked ? 'unlock' : 'lock'}" class="w-2.5 h-2.5"></i>
+                            <span>${isVipUnlocked ? 'បានដោះសោ' : 'ចាក់សោ'}</span>
+                        </span>
+                    </div>
+                `).join('');
+
+                body.innerHTML = `
+                    <div class="flex items-center justify-between p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 to-orange-500/10 border border-amber-500/30">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="crown" class="w-4 h-4 text-amber-400"></i>
+                            <span class="font-bold text-white text-xs">កញ្ចប់ VIP ទាំង 5 ប្រទេស</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold ${isVipUnlocked ? 'bg-emerald-500 text-black' : 'bg-amber-500 text-black'}">
+                            ${isVipUnlocked ? 'បើកដំណើរការ' : 'ជាប់សោ'}
+                        </span>
+                    </div>
+
+                    <div class="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                        ${bundleListHTML}
+                    </div>
+
+                    ${!isVipUnlocked ? `
+                        <div class="p-3 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-2.5 mt-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[11px] font-bold text-amber-400 flex items-center gap-1">
+                                    <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                                    <span>បញ្ចូល CODE V ដើម្បីដោះសោ៖</span>
+                                </label>
+                                <button onclick="fillDemoCodeV()" class="text-[10px] text-cyan-400 underline hover:text-cyan-300">សាកល្បងកូដគំរូ</button>
+                            </div>
+                            <div class="flex gap-2">
+                                <input id="code-v-input" type="text" placeholder="ឧ. V-VIP2026..." class="flex-1 px-3 py-2 rounded-xl bg-amoled-item border border-zinc-700 text-white font-mono text-xs uppercase focus:outline-none focus:border-amber-500">
+                                <button onclick="unlockVipWithCodeV()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs shrink-0 transition-all active:scale-95">
+                                    ដោះសោ
+                                </button>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between mt-2">
+                            <div>
+                                <p class="text-[11px] font-bold text-emerald-400">ដោះសោជោគជ័យ (CODE V)</p>
+                                <p class="text-[10px] text-zinc-400">សុពលភាព៖ 30 ថ្ងៃ • ទិន្នន័យ 100 GB</p>
+                            </div>
+                            <button onclick="lockVipBundle()" class="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-rose-500/20 text-zinc-300 hover:text-rose-400 text-[11px] font-semibold transition-colors">
+                                ចាក់សោវិញ
+                            </button>
+                        </div>
+                    `}
+                `;
+            } else if (type === 'bot') {
+                title.textContent = 'Telegram Bot ទិញ GB';
+                body.innerHTML = `
+                    <p>អ្នកអាចបញ្ចូលទឹកប្រាក់ និងទិញកញ្ចប់ទិន្នន័យ GB បន្ថែមដោយស្វ័យប្រវត្តិតាមរយៈ Telegram Bot ផ្លូវការ ២៤ ម៉ោង៖</p>
+                    <div class="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 font-mono text-center font-bold">
+                        @AegisVPN_AutoBot
+                    </div>
+                `;
+            } else if (type === 'guide') {
+                title.textContent = 'របៀបទិញកញ្ចប់ VIP';
+                body.innerHTML = `
+                    <p>១. ចុចលើប៊ូតុង <span class="text-cyan-400 font-bold">Bot ទិញ GB</span> ខាងក្រោម។</p>
+                    <p>២. ជ្រើសរើសកញ្ចប់ GB ដែលអ្នកត្រូវការ (50GB, 100GB ឬ Unlimited)។</p>
+                    <p>៣. ស្កេនបង់ប្រាក់តាម KHQR រួចប្រព័ន្ធនឹងបញ្ចូល GB ឱ្យអ្នកភ្លាមៗដោយស្វ័យប្រវត្តិ។</p>
+                `;
+            } else if (type === 'split') {
+                title.textContent = 'បំបែកកម្មវិធី (Split Tunneling)';
+                body.innerHTML = `
+                    <p class="mb-2">ជ្រើសរើសកម្មវិធីដែលត្រូវឆ្លងកាត់ VPN៖</p>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-amoled-item border border-zinc-800">
+                            <span>Telegram & TikTok</span>
+                            <span class="text-emerald-400 font-bold">ប្រើ VPN</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-amoled-item border border-zinc-800">
+                            <span>ABA Mobile / ACLEDA</span>
+                            <span class="text-zinc-400">មិនប្រើ VPN</span>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'admin') {
+                title.textContent = 'ផ្ទាំង Admin គ្រប់គ្រងម៉ាស៊ីនមេ';
+                footerBtn.classList.add('hidden');
+                renderAdminPanel(body);
+            }
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        // មុខងារបង្ហាញផ្ទាំង Admin សម្រាប់កំណត់ផ្ទាល់ខ្លួន និងគ្រប់គ្រងម៉ាស៊ីនមេ
+        function renderAdminPanel(bodyEl) {
+            const serverRowsHTML = servers.map((srv, idx) => `
+                <div class="p-2.5 rounded-xl bg-amoled-item border border-zinc-800 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <div class="w-6 h-6 rounded-full overflow-hidden shrink-0">${flagSVGs[srv.flagKey]}</div>
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-bold text-white truncate">${srv.name}</p>
+                            <p class="text-[9px] font-mono text-zinc-400 truncate">${srv.protocol} • ${srv.ping} ms</p>
+                        </div>
+                    </div>
+                    <button onclick="deleteServerByIndex(${idx})" title="លុបម៉ាស៊ីនមេ" class="w-7 h-7 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 flex items-center justify-center shrink-0 transition-colors">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            bodyEl.innerHTML = `
+                <div class="space-y-3">
+                    <div class="p-3 rounded-2xl bg-zinc-900/95 border border-zinc-800 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-5 h-5 rounded-md bg-amber-500/20 text-amber-400 font-mono text-[10px] font-bold flex items-center justify-center">1</span>
+                                <span class="text-xs font-bold text-amber-400">Get VPN • Add config manually</span>
+                            </div>
+                            <span class="text-[10px] text-zinc-400 font-mono">${servers.length} Servers</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] text-zinc-400 block mb-1">ប្រទេស / ទង់ជាតិ</label>
+                                <select id="admin-country" class="w-full px-2.5 py-2 rounded-xl bg-amoled-item border border-zinc-700 text-white text-[11px] focus:outline-none focus:border-amber-500">
+                                    <option value="kh">កម្ពុជា • ភ្នំពេញ</option>
+                                    <option value="sg">សិង្ហបុរី • SG</option>
+                                    <option value="vn">វៀតណាម • VN</option>
+                                    <option value="hk">ហុងកុង • HK</option>
+                                    <option value="jp">ជប៉ុន • JP</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-zinc-400 block mb-1">ថ្នាក់ពិធីការ (Category)</label>
+                                <select id="admin-category" onchange="switchAdminCategoryFields()" class="w-full px-2.5 py-2 rounded-xl bg-amoled-item border border-zinc-700 text-white text-[11px] focus:outline-none focus:border-amber-500">
+                                    <option value="v2ray">V2Ray (vless/vmess/trojan/ss)</option>
+                                    <option value="hysteria2">Hysteria2 (URL / JSON)</option>
+                                    <option value="ssh">SSH config (Proxy/TLS/DNSTT/SSL)</option>
+                                    <option value="openvpn">OpenVPN SSH (Payload/SNI/Proxy)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="col-span-2">
+                                <label class="text-[10px] text-zinc-400 block mb-1">ឈ្មោះម៉ាស៊ីនមេ (Server Name)</label>
+                                <input id="admin-name" type="text" placeholder="ឧ. KH VIP Fast Route" class="w-full px-2.5 py-1.5 rounded-xl bg-amoled-item border border-zinc-700 text-white text-[11px] focus:outline-none focus:border-amber-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-zinc-400 block mb-1">Ping (ms)</label>
+                                <input id="admin-ping" type="number" min="1" max="999" value="18" class="w-full px-2.5 py-1.5 rounded-xl bg-amoled-item border border-zinc-700 text-white font-mono text-[11px] focus:outline-none focus:border-amber-500">
+                            </div>
+                        </div>
+
+                        <!-- V2Ray -->
+                        <div id="cfg-group-v2ray" class="p-2.5 rounded-xl bg-amoled-item/90 border border-zinc-800 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-cyan-400">V2Ray Config</span>
+                                <select id="v2ray-type" onchange="applyV2RayTemplate()" class="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-cyan-400">
+                                    <option value="vless">vless</option>
+                                    <option value="vmess">vmess</option>
+                                    <option value="trojan">trojan</option>
+                                    <option value="shadowsocks">Shadowsocks</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-zinc-400 block mb-1">URI / Config Link</label>
+                                <textarea id="v2ray-config" rows="2" class="w-full p-2 rounded-xl bg-zinc-950 border border-zinc-700 text-cyan-300 font-mono text-[10px] focus:outline-none focus:border-cyan-400">vless://uuid-here@v2ray.aegisvpn.net:443?encryption=none&security=tls&type=ws&path=/vless#KH_VLESS</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Hysteria2 -->
+                        <div id="cfg-group-hysteria2" class="hidden p-2.5 rounded-xl bg-amoled-item/90 border border-zinc-800 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-emerald-400">Hysteria2 Config</span>
+                                <select id="hy2-mode" onchange="applyHy2Template()" class="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-emerald-400">
+                                    <option value="url">URL</option>
+                                    <option value="json">JSON config</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-zinc-400 block mb-1">Hysteria2 URL / JSON</label>
+                                <textarea id="hy2-config" rows="3" class="w-full p-2 rounded-xl bg-zinc-950 border border-zinc-700 text-emerald-300 font-mono text-[10px] focus:outline-none focus:border-emerald-400">hysteria2://auth-secret@hy2.aegisvpn.net:8443/?sni=sni.aegisvpn.net&insecure=0#SG_HY2</textarea>
+                            </div>
+                        </div>
+
+                        <!-- SSH config -->
+                        <div id="cfg-group-ssh" class="hidden p-2.5 rounded-xl bg-amoled-item/90 border border-zinc-800 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-indigo-400">SSH config</span>
+                                <select id="ssh-mode" class="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-indigo-400">
+                                    <option value="SSH+Proxy+Payload">SSH+Proxy+Payload</option>
+                                    <option value="SSH+TLS+Proxy+Payload">SSH+TLS+Proxy+Payload</option>
+                                    <option value="SSH+DNSTT">SSH+DNSTT</option>
+                                    <option value="SSH+SSL">SSH+SSL</option>
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[10px] text-zinc-400 block mb-1">SSH Host:Port</label>
+                                    <input id="ssh-hostport" type="text" value="ssh.aegisvpn.net:22" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-indigo-400">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-zinc-400 block mb-1">Proxy / SNI / PubKey</label>
+                                    <input id="ssh-proxy" type="text" value="104.16.1.1:80" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-indigo-400">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-zinc-400 block mb-1">Payload / DNSTT Domain</label>
+                                <input id="ssh-payload" type="text" value="GET / HTTP/1.1[crlf]Host: cdn.aegisvpn.net[crlf]Upgrade: websocket[crlf][crlf]" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-indigo-200 font-mono text-[10px] focus:outline-none focus:border-indigo-400">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[10px] text-zinc-400 block mb-1">SSH Username</label>
+                                    <input id="ssh-username" type="text" placeholder="ឧ. aegis-ssh" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-indigo-400">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-zinc-400 block mb-1">SSH Password</label>
+                                    <input id="ssh-password" type="password" placeholder="••••••••" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-indigo-400">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OpenVPN SSH -->
+                        <div id="cfg-group-openvpn" class="hidden p-2.5 rounded-xl bg-amoled-item/90 border border-zinc-800 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-amber-400">OpenVPN SSH Config</span>
+                                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">TCP / SSH Tunnel</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[10px] text-zinc-400 block mb-1">Open Username</label>
+                                    <input id="ovpn-username" type="text" placeholder="ឧ. openvpn-user" oninput="syncOvpnEditor()" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-amber-400">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-zinc-400 block mb-1">Open Password</label>
+                                    <input id="ovpn-password" type="password" placeholder="••••••••" oninput="syncOvpnEditor()" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-amber-400">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[10px] text-zinc-400 block mb-1">Remote Host:Port</label>
+                                    <input id="ovpn-remote-host" type="text" value="ovpn.aegisvpn.net:1194" oninput="syncOvpnEditor()" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-amber-400">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-zinc-400 block mb-1">SNI</label>
+                                    <input id="ovpn-sni" type="text" value="cdn.aegisvpn.net" oninput="syncOvpnEditor()" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-amber-400">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[10px] text-zinc-400 block mb-1">Proxy</label>
+                                    <input id="ovpn-proxy" type="text" value="127.0.0.1:8080" oninput="syncOvpnEditor()" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-amber-400">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] text-zinc-400 block mb-1">Remote Proxy</label>
+                                    <input id="ovpn-remote-proxy" type="text" value="proxy.aegisvpn.net:80" oninput="syncOvpnEditor()" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono text-[10px] focus:outline-none focus:border-amber-400">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="text-[10px] text-zinc-400 block mb-1">Payload</label>
+                                <input id="ovpn-payload" type="text" value="CONNECT [host_port] HTTP/1.1[crlf]Host: [sni][crlf][crlf]" oninput="syncOvpnEditor()" class="w-full px-2 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-amber-200 font-mono text-[10px] focus:outline-none focus:border-amber-400">
+                            </div>
+
+                            <div>
+                                <label class="text-[10px] text-zinc-400 block mb-1">Custom options</label>
+                                <textarea id="ovpn-custom" rows="2" oninput="syncOvpnEditor()" class="w-full p-2 rounded-lg bg-zinc-950 border border-zinc-700 text-zinc-200 font-mono text-[10px] focus:outline-none focus:border-amber-400">http-proxy-retry
+resolv-retry infinite</textarea>
+                            </div>
+
+                            <div>
+                                <label class="text-[10px] text-zinc-400 block mb-1">Global options</label>
+                                <textarea id="ovpn-global" rows="2" oninput="syncOvpnEditor()" class="w-full p-2 rounded-lg bg-zinc-950 border border-zinc-700 text-zinc-200 font-mono text-[10px] focus:outline-none focus:border-amber-400">client
+dev tun
+proto tcp</textarea>
+                            </div>
+
+                            <div class="p-2.5 rounded-xl bg-zinc-950 border border-amber-500/30 space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] font-bold text-amber-400 flex items-center gap-1">
+                                        <i data-lucide="file-code-2" class="w-3 h-3"></i>
+                                        <span>Configuration editor (.ovpn / JSON)</span>
+                                    </span>
+                                    <button type="button" onclick="resetOvpnEditor()" class="text-[10px] text-cyan-400 hover:text-cyan-300 underline">
+                                        ធ្វើបច្ចុប្បន្នភាព
+                                    </button>
+                                </div>
+                                <textarea id="ovpn-config-editor" rows="5" class="w-full p-2 rounded-lg bg-black/90 border border-zinc-800 text-emerald-300 font-mono text-[10px] leading-relaxed focus:outline-none focus:border-amber-400"></textarea>
+                            </div>
+                        </div>
+
+                        <button onclick="addCustomAdminServer()" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            <span>បន្ថែម Config ចូល Server</span>
+                        </button>
+                    </div>
+
+                    <div>
+                        <p class="text-[11px] font-bold text-zinc-300 mb-1.5">បញ្ជីគ្រប់គ្រងម៉ាស៊ីនមេបច្ចុប្បន្ន៖</p>
+                        <div class="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">
+                            ${serverRowsHTML}
+                        </div>
+                    </div>
+
+                    <button onclick="closeModal()" class="w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs transition-colors">
+                        បិទផ្ទាំង Admin
+                    </button>
+                </div>
+            `;
+            syncOvpnEditor();
+            lucide.createIcons();
+        }
+
+        function buildOvpnConfigText() {
+            const ovpnUser = (document.getElementById('ovpn-username')?.value || '').trim();
+            const ovpnPass = (document.getElementById('ovpn-password')?.value || '').trim();
+            const ovpnRemote = (document.getElementById('ovpn-remote-host')?.value || 'ovpn.aegisvpn.net:1194').trim();
+            const ovpnSni = (document.getElementById('ovpn-sni')?.value || 'cdn.aegisvpn.net').trim();
+            const ovpnProxy = (document.getElementById('ovpn-proxy')?.value || '127.0.0.1:8080').trim();
+            const ovpnRemoteProxy = (document.getElementById('ovpn-remote-proxy')?.value || 'proxy.aegisvpn.net:80').trim();
+            const ovpnPayload = (document.getElementById('ovpn-payload')?.value || '').trim();
+            const ovpnCustom = (document.getElementById('ovpn-custom')?.value || '').trim();
+            const ovpnGlobal = (document.getElementById('ovpn-global')?.value || '').trim();
+
+            return [
+                ovpnGlobal || 'client\ndev tun\nproto tcp',
+                `remote ${ovpnRemote.replace(':', ' ')}`,
+                `http-proxy ${ovpnProxy.replace(':', ' ')}`,
+                `# remote-proxy: ${ovpnRemoteProxy}`,
+                `# sni: ${ovpnSni}`,
+                `# payload: ${ovpnPayload}`,
+                `# auth: ${ovpnUser || 'none'}:${ovpnPass ? '******' : 'none'}`,
+                ovpnCustom
+            ].filter(Boolean).join('\n');
+        }
+
+        function syncOvpnEditor() {
+            const editor = document.getElementById('ovpn-config-editor');
+            if (!editor) return;
+            editor.value = buildOvpnConfigText();
+        }
+
+        function resetOvpnEditor() {
+            syncOvpnEditor();
+            showToast('បានធ្វើបច្ចុប្បន្នភាព Configuration editor រួចរាល់!');
+        }
+
+        function switchAdminCategoryFields() {
+            const cat = document.getElementById('admin-category')?.value || 'v2ray';
+            ['v2ray', 'hysteria2', 'ssh', 'openvpn'].forEach(key => {
+                const el = document.getElementById(`cfg-group-${key}`);
+                if (el) {
+                    if (key === cat) el.classList.remove('hidden');
+                    else el.classList.add('hidden');
+                }
+            });
+        }
+
+        function applyV2RayTemplate() {
+            const type = document.getElementById('v2ray-type')?.value;
+            const area = document.getElementById('v2ray-config');
+            if (!area) return;
+
+            if (type === 'vless') {
+                area.value = 'vless://uuid-here@v2ray.aegisvpn.net:443?encryption=none&security=tls&type=ws&path=/vless#KH_VLESS';
+            } else if (type === 'vmess') {
+                area.value = 'vmess://eyJhZGQiOiJ2MnJheS5hZWdpc3Zwbi5uZXQiLCJwb3J0IjoiNDQzIiwiaWQiOiJ1dWlkLWhlcmUiLCJuZXQiOiJ3cyIsInBhdGgiOiIvdm1lc3MifQ==';
+            } else if (type === 'trojan') {
+                area.value = 'trojan://password-here@trojan.aegisvpn.net:443?security=tls&type=ws&path=/trojan#SG_TROJAN';
+            } else if (type === 'shadowsocks') {
+                area.value = 'ss://YWVzLTI1Ni1nY206cGFzc3dvcmQ=@ss.aegisvpn.net:8388#VN_SS';
+            }
+        }
+
+        function applyHy2Template() {
+            const mode = document.getElementById('hy2-mode')?.value;
+            const area = document.getElementById('hy2-config');
+            if (!area) return;
+
+            if (mode === 'url') {
+                area.value = 'hysteria2://auth-secret@hy2.aegisvpn.net:8443/?sni=sni.aegisvpn.net&insecure=0#SG_HY2';
+            } else {
+                area.value = JSON.stringify({
+                    server: 'hy2.aegisvpn.net:8443',
+                    auth: 'auth-secret',
+                    tls: { sni: 'sni.aegisvpn.net', insecure: false }
+                }, null, 2);
+            }
+        }
+
+        function addCustomAdminServer() {
+            const flagKey = document.getElementById('admin-country')?.value || 'sg';
+            const category = document.getElementById('admin-category')?.value || 'v2ray';
+            const customName = (document.getElementById('admin-name')?.value || '').trim();
+            const pingVal = parseInt(document.getElementById('admin-ping')?.value || '20', 10);
+
+            const countryLabels = {
+                kh: 'កម្ពុជា',
+                sg: 'សិង្ហបុរី',
+                vn: 'វៀតណាម',
+                hk: 'ហុងកុង',
+                jp: 'ជប៉ុន'
+            };
+
+            let protocolLabel = 'Xray V2Ray';
+            let filterBucket = 'Xray V2Ray';
+            let subtitleText = '';
+            let uriText = '';
+
+            if (category === 'v2ray') {
+                const vType = document.getElementById('v2ray-type')?.value || 'vless';
+                const vCfg = (document.getElementById('v2ray-config')?.value || '').trim();
+                protocolLabel = `V2Ray • ${vType}`;
+                filterBucket = vType === 'shadowsocks' ? 'Shadowsocks' : 'Xray V2Ray';
+                subtitleText = `V2Ray (${vType}) • Manual Config`;
+                uriText = vCfg || `${vType}://manual@v2ray.aegisvpn.net:443`;
+            } else if (category === 'hysteria2') {
+                const hyMode = document.getElementById('hy2-mode')?.value || 'url';
+                const hyCfg = (document.getElementById('hy2-config')?.value || '').trim();
+                protocolLabel = `Hysteria2 (${hyMode.toUpperCase()})`;
+                filterBucket = 'Xray V2Ray';
+                subtitleText = `Hysteria2 • ${hyMode === 'json' ? 'JSON Config' : 'URL Config'}`;
+                uriText = hyCfg.replace(/\s+/g, ' ') || 'hysteria2://manual@hy2.aegisvpn.net:8443';
+            } else if (category === 'ssh') {
+                const sshMode = document.getElementById('ssh-mode')?.value || 'SSH+Proxy+Payload';
+                const sshHost = (document.getElementById('ssh-hostport')?.value || 'ssh.aegisvpn.net:22').trim();
+                const sshProxy = (document.getElementById('ssh-proxy')?.value || '').trim();
+                const sshPayload = (document.getElementById('ssh-payload')?.value || '').trim();
+                const sshUser = (document.getElementById('ssh-username')?.value || '').trim();
+                const sshPass = (document.getElementById('ssh-password')?.value || '').trim();
+                protocolLabel = sshMode;
+                filterBucket = 'SSH WS';
+                subtitleText = `${sshMode} • ${sshHost}${sshUser ? ` • User: ${sshUser}` : ''}`;
+                uriText = `ssh://${sshUser ? `${sshUser}:${sshPass || '***'}@` : ''}${sshHost} | proxy=${sshProxy} | payload=${sshPayload}`;
+            } else if (category === 'openvpn') {
+                const ovpnUser = (document.getElementById('ovpn-username')?.value || '').trim();
+                const ovpnPass = (document.getElementById('ovpn-password')?.value || '').trim();
+                const ovpnSni = (document.getElementById('ovpn-sni')?.value || '').trim();
+                const ovpnRemote = (document.getElementById('ovpn-remote-host')?.value || 'ovpn.aegisvpn.net:1194').trim();
+                const ovpnProxy = (document.getElementById('ovpn-proxy')?.value || '').trim();
+                const ovpnRemoteProxy = (document.getElementById('ovpn-remote-proxy')?.value || '').trim();
+                const ovpnPayload = (document.getElementById('ovpn-payload')?.value || '').trim();
+                const ovpnEditorVal = (document.getElementById('ovpn-config-editor')?.value || '').trim();
+
+                if (!ovpnRemote.includes(':')) {
+                    showToast('សូមបញ្ចូល Remote Host:Port ឱ្យត្រឹមត្រូវ (ឧ. host:1194)!');
+                    return;
+                }
+
+                protocolLabel = 'OpenVPN SSH';
+                filterBucket = 'OpenVPN SSH';
+                subtitleText = `OpenVPN SSH • ${ovpnRemote}${ovpnUser ? ` • User: ${ovpnUser}` : ` • SNI: ${ovpnSni || 'none'}`}`;
+                uriText = ovpnEditorVal
+                    ? `ovpn+ssh://${ovpnUser ? `${ovpnUser}:${ovpnPass || '***'}@` : ''}${ovpnRemote} | ${ovpnEditorVal.replace(/\s+/g, ' ')}`
+                    : `ovpn+ssh://${ovpnUser ? `${ovpnUser}:${ovpnPass || '***'}@` : ''}${ovpnRemote} | sni=${ovpnSni} | proxy=${ovpnProxy} | rproxy=${ovpnRemoteProxy} | ${ovpnPayload}`;
+            }
+
+            const finalName = customName || `${countryLabels[flagKey]} • ${protocolLabel}`;
+
+            const newServer = {
+                id: `custom-${Date.now()}`,
+                name: finalName,
+                subtitle: subtitleText,
+                shortProto: protocolLabel,
+                protocol: filterBucket,
+                ssUri: uriText,
+                flagKey: flagKey,
+                ping: Number.isNaN(pingVal) ? 20 : Math.max(1, pingVal)
+            };
+
+            servers.unshift(newServer);
+            renderServers();
+            const modalBody = document.getElementById('modal-body');
+            if (modalBody) renderAdminPanel(modalBody);
+            showToast(`បានបញ្ចូល ${protocolLabel} ទៅ Server រួចរាល់!`);
+        }
+
+        function deleteServerByIndex(index) {
+            if (servers.length <= 1) {
+                showToast('ត្រូវរក្សាទុកម៉ាស៊ីនមេយ៉ាងហោចណាស់ ១!');
+                return;
+            }
+            const removed = servers[index];
+            servers.splice(index, 1);
+            if (selectedServer.id === removed.id) {
+                selectedServer = servers[0];
+                document.getElementById('home-flag-container').innerHTML = flagSVGs[selectedServer.flagKey];
+                document.getElementById('home-server-name').textContent = selectedServer.name;
+                const homeNameDup = document.getElementById('home-server-name-dup');
+                if (homeNameDup) homeNameDup.textContent = selectedServer.name;
+                document.getElementById('home-server-desc').textContent = selectedServer.subtitle;
+                document.getElementById('home-server-ping').textContent = `${selectedServer.ping} ms`;
+            }
+            renderServers();
+            const modalBody = document.getElementById('modal-body');
+            if (modalBody) renderAdminPanel(modalBody);
+            showToast(`បានលុប ${removed.name}`);
+        }
+
+        function fillDemoCodeV() {
+            const input = document.getElementById('code-v-input');
+            if (input) input.value = 'V-VIP888';
+        }
+
+        function unlockVipWithCodeV() {
+            const input = document.getElementById('code-v-input');
+            const code = input ? input.value.trim().toUpperCase() : '';
+
+            if (!code) {
+                showToast('សូមបញ្ចូល CODE V ជាមុនសិន!');
+                return;
+            }
+
+            if (code.startsWith('V-') || (code.startsWith('V') && code.length >= 4)) {
+                isVipUnlocked = true;
+                renderServers();
+                openModal('vip');
+                showToast('ដោះសោកញ្ចប់ VIP ទាំង 5 ម៉ាស៊ីនមេជោគជ័យ!');
+            } else {
+                showToast('CODE V មិនត្រឹមត្រូវទេ! (ត្រូវផ្តើមដោយអក្សរ V)');
+            }
+        }
+
+        function lockVipBundle() {
+            isVipUnlocked = false;
+            if (isConnected) disconnectVPN();
+            renderServers();
+            openModal('vip');
+            showToast('បានចាក់សោកញ្ចប់ម៉ាស៊ីនមេ VIP ឡើងវិញ');
+        }
+
+        function closeModal() {
+            document.getElementById('info-modal').classList.add('hidden');
+        }
+
+        let toastTimeout;
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = msg;
+            toast.classList.remove('opacity-0', '-translate-y-3');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-3');
+            }, 2500);
+        }
+
+        // ចាប់ផ្តើមដំណើរការទិន្នន័យដំបូង
+        try {
+            document.getElementById('home-flag-container').innerHTML = flagSVGs[selectedServer.flagKey];
+            renderServers();
+            renderHistory();
+        } catch (err) {
+            console.error('Initialization error:', err);
+        }
+    </script>
+</body>
+</html>
